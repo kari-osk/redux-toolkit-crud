@@ -1,35 +1,50 @@
 import React, { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { postAdded } from './postsSlice'
+import { addNewPost, postAdded } from './postsSlice'
 import { selectAllUsers } from '../users/usersSlice'
+import { useNavigate } from 'react-router-dom'
 
 const AddPostForm = () => {
+
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+  const users = useSelector(selectAllUsers)
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [userId, setUserId] = useState('')
-
-  const users = useSelector(selectAllUsers)
-
-  const dispatch = useDispatch()
+  const [addRequestStatus, setAddRequestStatus] = useState('idle')
 
   const onTitleChanged = e => setTitle(e.target.value)
   const onContentChanged = e => setContent(e.target.value)
   const onAuthorChanged = e => setUserId(e.target.value)
 
+  const canSave = [title, content, userId].every(Boolean) && addRequestStatus === 'idle';
+
+  //check the input fields 
+  // const canSave = Boolean(title) && Boolean(content) && Boolean(userId)
+
+
   const onSavePostClicked = () => {
-    if (title && content) {
-      dispatch(
-        postAdded(title, content, userId)
-      )
-      setTitle('')
-      setContent('')
+    if (canSave) {
+      try {
+        setAddRequestStatus('pending')
+        dispatch(
+          addNewPost({title, body: content, userId})).unwrap()
+      
+        setTitle('')
+        setContent('')
+        setUserId('')
+        navigate('/')
+      } catch (error) {
+        console.error('Failed to save post', error)
+      } finally {
+        setAddRequestStatus('idle')
+      }
     }
   }
 
-  //check the input fields 
-  const canSave = Boolean(title) && Boolean(content) && Boolean(userId)
-
+  
   const usersOptions = users.map(user => (
     <option key={user.id} value={user.id}>
       {user.name}
